@@ -12,12 +12,17 @@ contract MyEpicNFT is ERC721URIStorage {
   using Counters for Counters.Counter;
   Counters.Counter private _tokenIds;
 
+  uint256 MAX_MINT_COUNT = 50;
 
   string baseSvg = "<svg xmlns='http://www.w3.org/2000/svg' preserveAspectRatio='xMinYMin meet' viewBox='0 0 350 350'><style>.base { fill: white; font-family: serif; font-size: 24px; }</style><rect width='100%' height='100%' fill='black' /><text x='50%' y='50%' class='base' dominant-baseline='middle' text-anchor='middle'>";
 
   string[] firstWords = ["Common", "Common", "Common", "Common", "Common", "Uncommon", "Uncommon", "Uncommon", "Uncommon", "Rare", "Rare", "Rare", "Epic", "Epic", "Legendary"];
   string[] secondWords = ["Blue", "Green", "Red", "Yellow", "Black", "White", "Purple", "Pink", "Orange", "Brown", "Gray", "Neon"];
   string[] thirdWords = ["Cat", "Dog", "Frog", "Bird", "Snake", "Turtle", "Chicken", "Pig", "Cow", "Horse", "Sheep", "Goat", "Lion", "Tiger", "Elephant", "Whale"];
+
+  mapping(address => uint256) nftCount;
+
+  event NewEpicNFTMinted(address sender, uint256 tokenId);
 
   constructor() ERC721 ("AnimalsNFT", "ANIMALS") {
     console.log("This is my NFT contract. Woah!");
@@ -46,7 +51,16 @@ contract MyEpicNFT is ERC721URIStorage {
       return uint256(keccak256(abi.encodePacked(input)));
   }
 
+    function getTotalNFTsMintedSoFar() public view returns (uint256) {
+        return nftCount[msg.sender];
+    }
+
   function makeAnEpicNFT() public {
+    require(
+      getTotalNFTsMintedSoFar() < MAX_MINT_COUNT,
+      "Error: You have reached the maximum number of NFTs allowed"
+    );
+
     uint256 newItemId = _tokenIds.current();
 
     string memory first = pickRandomFirstWord(newItemId);
@@ -81,8 +95,12 @@ contract MyEpicNFT is ERC721URIStorage {
     _safeMint(msg.sender, newItemId);
     
     _setTokenURI(newItemId, finalTokenUri);
+
+    nftCount[msg.sender]++;
   
     _tokenIds.increment();
     console.log("An NFT w/ ID %s has been minted to %s", newItemId, msg.sender);
+
+    emit NewEpicNFTMinted(msg.sender, newItemId);
   }
 }
